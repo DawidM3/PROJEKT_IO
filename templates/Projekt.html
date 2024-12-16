@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Crawler</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Press+Start+2P">
+    <style>
+        /* General Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: url('static/winxp.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .scanlines {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 300;
+            opacity: 0.6;
+            animation: opacity 3s linear infinite;
+        }
+
+        .scanlines:before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 51%);
+            background-size: 100% 4px;
+            animation: scanlines 0.2s linear infinite;
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 400;
+            opacity: 0.8;
+            pointer-events: none;
+            background: url('https://ice-creme.de/images/background-noise.png');
+            animation: noise 1s infinite alternate;
+        }
+
+        @keyframes noise {
+            0%, 100% { background-position: 0 0; }
+            10% { background-position: -5% -10%; }
+            20% { background-position: -15% 5%; }
+            30% { background-position: 7% -25%; }
+            40% { background-position: 20% 25%; }
+            50% { background-position: -25% 10%; }
+            60% { background-position: 15% 5%; }
+            70% { background-position: 0 15%; }
+            80% { background-position: 25% 35%; }
+            90% { background-position: -10% 10%; }
+        }
+
+        @keyframes scanlines {
+            from {
+                background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.5) 51%);
+                background-size: 100% 4px;
+            }
+            to {
+                background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 50%, transparent 51%);
+                background-size: 100% 4px;
+            }
+        }
+
+        @keyframes opacity {
+            0% { opacity: 0.6; }
+            20% { opacity: 0.3; }
+            35% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+            60% { opacity: 0.4; }
+            80% { opacity: 0.7; }
+            100% { opacity: 0.6; }
+        }
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #welcome-screen button {
+            background-color: white;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #welcome-screen button:hover {
+            background-color: gray;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 80px auto;
+            background-color: #c0c0c0;
+            border: 2px solid #808080;
+            border-radius: 5px;
+            box-shadow: inset -2px -2px 4px #ffffff, inset 2px 2px 4px #000000;
+            padding: 20px;
+            font-family: 'Press Start 2P', sans-serif;
+            color: #000;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #000;
+            background: #e0e0e0;
+            border: 2px solid #808080;
+            padding: 10px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            background-color: #ffffff;
+            border: 2px solid #808080;
+            border-radius: 4px;
+            font-family: 'Press Start 2P', cursive;
+            box-shadow: inset -2px -2px 4px #ffffff, inset 2px 2px 4px #000000;
+        }
+
+        input[type="submit"], button {
+            padding: 10px;
+            background-color: #e0e0e0;
+            border: 2px solid #808080;
+            border-radius: 4px;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+            box-shadow: -2px -2px 4px #ffffff, 2px 2px 4px #000000;
+        }
+
+        input[type="submit"]:hover, button:hover {
+            background-color: #c0c0c0;
+        }
+
+        #logs, #results {
+            border: 2px solid #808080;
+            border-radius: 5px;
+            background: #ffffff;
+            color: #000;
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-top: 20px;
+        }
+
+        #logs {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+        <!-- Welcome Screen -->
+        <div id="welcome-screen">
+            <h1>WebcrawlerIO - v0.53</h1>
+            <button id="login-button">Log In</button>
+        </div>
+    
+    <div class="container">
+    <div class="scanlines"></div>
+    <div class="noise"></div>
+        <h1>Projekt IO - Web Crawler</h1>
+        <form id="crawlForm">
+            <input type="text" id="start_url" name="start_url" placeholder="Wklej linka do głównej" required>
+            <input type="submit" value="Jazda z URL'ami">
+        </form>
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="stopButton">Zatrzymaj Crawlera</button>
+            <button id="exportButton">Eksportuj do Excel</button>
+        </div>
+        <h2>Logi działania crawlera</h2>
+        <div id="logs"></div>
+        <h2>Zwrotka</h2>
+        <div id="results"></div>
+    </div>
+    <script>
+                const loginButton = document.getElementById('login-button');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const mainContent = document.querySelector('.container');
+
+        // Activate sound and show main content on Log In
+        loginButton.addEventListener('click', function () {
+            const audio = new Audio('static/win95.mp3');
+            audio.play().catch(error => {
+                console.error("Audio playback failed:", error);
+            });
+            const audio2 = new Audio('static/click.wav');
+            audio2.play().catch(error => {
+                console.error("Audio playback failed:", error);
+          });          
+
+            // Hide the welcome screen and show the main content
+            welcomeScreen.style.display = 'none';
+            mainContent.style.display = 'block';
+        });
+        const form = document.getElementById('crawlForm');
+        const logsDiv = document.getElementById('logs');
+        const resultsDiv = document.getElementById('results');
+        const stopButton = document.getElementById('stopButton');
+        const exportButton = document.getElementById('exportButton');
+
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            logsDiv.innerHTML = '';
+            resultsDiv.innerHTML = '';
+
+            const formData = new FormData(form);
+            fetch('/start_crawl', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.json())
+              .then(data => {
+                console.log(data.message);
+                fetchLogs();
+                fetchResults();
+            });
+        });
+
+        stopButton.addEventListener('click', function () {
+            fetch('/stop_crawl', {
+                method: 'POST'
+            }).then(response => response.json())
+              .then(data => {
+                console.log(data.message);
+                alert(data.message);
+            });
+        });
+
+        exportButton.addEventListener('click', function () {
+            fetch('/export_results')
+                .then(response => {
+                    if (response.status === 200) {
+                        return response.blob();
+                    } else {
+                        alert('Eksport nieudany: Brak danych do eksportu');
+                        throw new Error('No data to export');
+                    }
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'crawl_results.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => console.error('Export error:', error));
+        });
+
+        function fetchLogs() {
+            fetch('/get_logs')
+            .then(response => response.json())
+            .then(data => {
+                logsDiv.innerHTML = data.logs.join('<br>');
+                setTimeout(fetchLogs, 1000); // Continuously update logs every second
+            });
+        }
+
+        function fetchResults() {
+            fetch('/get_results')
+            .then(response => response.json())
+            .then(data => {
+                let resultsHtml = '';
+                data.results.forEach(result => {
+                    resultsHtml += `<strong>URL:</strong> ${result.url}<br>`;
+                    resultsHtml += `<strong>Meta Title:</strong> ${result.meta_title}<br>`;
+                    resultsHtml += `<strong>Meta Description:</strong> ${result.meta_description}<br>`;
+                    resultsHtml += `<strong>P Tags Content:</strong> ${result.p_tags}<br><br>`;
+                });
+                resultsDiv.innerHTML = resultsHtml;
+                setTimeout(fetchResults, 1000); // Continuously update results every second
+            });
+        }
+        
+    stopButton.addEventListener('click', function () {
+        const audio = new Audio('static/click.wav');
+        audio.play().catch(error => {
+            console.error("Audio playback failed:", error);
+    });
+});
+// Nasłuchiwacz dla 'exportButton' - odtwarza click.wav
+exportButton.addEventListener('click', function () {
+    const audio = new Audio('static/click.wav');
+    audio.play().catch(error => {
+        console.error("Audio playback failed:", error);
+    });
+});
+// Nasłuchiwacz dla formularza - odtwarza click.wav przy próbie wysłania formularza
+form.addEventListener('submit', function (event) {
+    event.preventDefault(); // Zapobiega domyślnej akcji formularza (np. przeładowaniu strony)
+
+    // Odtwarzanie dźwięku click.wav
+    const submitAudio = new Audio('static/click.wav');
+    submitAudio.play().catch(error => {
+        console.error("Audio playback failed:", error);
+    });
+});
+    </script>
+   
+</body>
+</html>
