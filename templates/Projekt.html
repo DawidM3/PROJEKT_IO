@@ -211,7 +211,7 @@
         const welcomeScreen = document.getElementById('welcome-screen');
         const mainContent = document.querySelector('.container');
 
-        // Activate sound and show main content on Log In
+     
         loginButton.addEventListener('click', function () {
             const audio = new Audio('static/win95.mp3');
             audio.play().catch(error => {
@@ -222,7 +222,7 @@
                 console.error("Audio playback failed:", error);
           });          
 
-            // Hide the welcome screen and show the main content
+           
             welcomeScreen.style.display = 'none';
             mainContent.style.display = 'block';
         });
@@ -313,18 +313,18 @@
             console.error("Audio playback failed:", error);
     });
 });
-// Nasłuchiwacz dla 'exportButton' - odtwarza click.wav
+
 exportButton.addEventListener('click', function () {
     const audio = new Audio('static/click.wav');
     audio.play().catch(error => {
         console.error("Audio playback failed:", error);
     });
 });
-// Nasłuchiwacz dla formularza - odtwarza click.wav przy próbie wysłania formularza
-form.addEventListener('submit', function (event) {
-    event.preventDefault(); // Zapobiega domyślnej akcji formularza (np. przeładowaniu strony)
 
-    // Odtwarzanie dźwięku click.wav
+form.addEventListener('submit', function (event) {
+    event.preventDefault(); 
+
+   
     const submitAudio = new Audio('static/click.wav');
     submitAudio.play().catch(error => {
         console.error("Audio playback failed:", error);
