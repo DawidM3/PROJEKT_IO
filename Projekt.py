@@ -11,15 +11,14 @@ import os
 
 app = Flask(__name__)
 
-# Data storage for crawl results and logs
 crawl_results = []
 crawl_logs = []
 is_crawling = False  # Flag to control the crawling process
 
-# ThreadPoolExecutor for concurrent requests
+
 executor = ThreadPoolExecutor(max_workers=5)
 
-# Function to extract sitemap URLs from robots.txt
+
 def get_sitemap_from_robots(url):
     sitemap_urls = []
     try:
@@ -37,7 +36,7 @@ def get_sitemap_from_robots(url):
     
     return sitemap_urls
 
-# Function to extract URLs from a sitemap
+
 def extract_urls_from_sitemap(sitemap_url):
     urls = []
     try:
@@ -53,18 +52,18 @@ def extract_urls_from_sitemap(sitemap_url):
     
     return urls
 
-# Function to extract data from a given URL with a timeout and session
+
 def extract_data_from_url(session, url):
     try:
         response = session.get(url, timeout=5)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Extract meta title
+           
             meta_title = soup.find('title').get_text(strip=True) if soup.find('title') else 'No title found'
             log_message(f"Meta title found for {url}: {meta_title}", "success")
 
-            # Extract meta description
+           
             meta_description = soup.find('meta', attrs={'name': 'description'})
             if meta_description:
                 meta_description = meta_description['content']
@@ -72,7 +71,7 @@ def extract_data_from_url(session, url):
                 meta_description = 'No description found'
             log_message(f"Meta description found for {url}: {meta_description}", "info")
 
-            # Extract all <p> tags content
+            
             p_tags_content = [p.get_text(strip=True) for p in soup.find_all('p')]
             log_message(f"P tags content extracted for {url}", "info")
 
@@ -89,7 +88,7 @@ def extract_data_from_url(session, url):
         log_message(f"Error processing {url}: {str(e)}", "error")
         return None
 
-# Function to log messages and store them in the crawl_logs list with time and color
+
 def log_message(message, log_type):
     timestamp = datetime.now().strftime('%H:%M:%S')
     color_class = log_type  # Define log type as class for color
@@ -97,7 +96,7 @@ def log_message(message, log_type):
     crawl_logs.append(formatted_message)
     print(formatted_message)
 
-# Web crawling logic with depth limitation and same-domain filtering
+
 def crawl_and_collect_data(start_url, max_pages=100):
     global is_crawling
     is_crawling = True
@@ -108,10 +107,10 @@ def crawl_and_collect_data(start_url, max_pages=100):
     crawled_urls = set()
     sitemap_urls_set = set()  # Set to store sitemap URLs
 
-    # List of file extensions to skip
+   
     excluded_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp'}
 
-    # Get sitemaps from robots.txt and add those URLs to the crawl list
+    
     sitemaps = get_sitemap_from_robots(start_url)
     for sitemap in sitemaps:
         urls_from_sitemap = extract_urls_from_sitemap(sitemap)
@@ -124,7 +123,7 @@ def crawl_and_collect_data(start_url, max_pages=100):
             if current_url in crawled_urls:
                 continue
 
-            # Skip URLs with excluded extensions
+           
             if any(current_url.lower().endswith(ext) for ext in excluded_extensions):
                 log_message(f"Skipping image or excluded file: {current_url}", "info")
                 continue
@@ -132,30 +131,30 @@ def crawl_and_collect_data(start_url, max_pages=100):
             log_message(f"Crawling {current_url}", "info")
             crawled_urls.add(current_url)
 
-            # Run data extraction
+          
             data = extract_data_from_url(session, current_url)
             if data and current_url not in sitemap_urls_set:  # Exclude sitemap URLs
                 crawl_results.append(data)
 
-                # Extract links to continue crawling other pages
+               
                 try:
                     for link in BeautifulSoup(session.get(current_url).text, 'html.parser').find_all('a', href=True):
                         new_url = urljoin(current_url, link['href'])
                         parsed_new_url = urlparse(new_url)
 
-                        # Check if the new URL belongs to the same domain and not already crawled
+                       
                         if parsed_new_url.netloc == base_domain and new_url not in crawled_urls:
                             urls_to_crawl.append(new_url)
                 except Exception as e:
                     log_message(f"Error processing links from {current_url}: {str(e)}", "error")
     is_crawling = False
 
-# Flask route to display the form and user interface
+
 @app.route('/')
 def index():
     return render_template('Projekt.html')
 
-# Start the crawling process in a separate thread
+
 @app.route('/start_crawl', methods=['POST'])
 def start_crawl():
     start_url = request.form['start_url']
@@ -163,50 +162,50 @@ def start_crawl():
     crawl_results.clear()
     crawl_logs.clear()
 
-    # Start the crawling in a separate thread to avoid blocking the web server
+   
     threading.Thread(target=crawl_and_collect_data, args=(start_url,)).start()
     return jsonify({'message': 'Crawling started', 'logs': crawl_logs})
 
-# Stop the crawling process
+
 @app.route('/stop_crawl', methods=['POST'])
 def stop_crawl():
     global is_crawling
     is_crawling = False
     return jsonify({'message': 'Crawling stopped'})
 
-# Funkcja do eksportu wyników do pliku Excel
+
 @app.route('/export_results', methods=['GET'])
 def export_results():
     global crawl_results
 
-    # Sprawdź, czy dane istnieją
+   
     if not crawl_results or len(crawl_results) == 0:
         log_message("Brak danych do eksportu", "error")
         return jsonify({'message': 'Brak danych do eksportu'}), 400
 
     try:
-        # Stwórz DataFrame z wyników
+       
         df = pd.DataFrame(crawl_results)
 
-        # Sprawdź, czy DataFrame nie jest pusty
+       
         if df.empty:
             log_message("DataFrame jest pusty - brak danych do zapisania", "error")
             return jsonify({'message': 'Brak danych do zapisania'}), 400
 
-        # Ścieżka do pliku
+     
         file_path = os.path.join(os.getcwd(), 'crawl_results.xlsx')
 
-        # Usuń plik, jeśli istnieje
+      
         if os.path.exists(file_path):
             os.remove(file_path)
 
-        # Zapisz dane do pliku Excel
+        
         df.to_excel(file_path, index=False)
 
-        # Logowanie sukcesu
+      
         log_message(f"Wyniki zostały wyeksportowane do pliku: {file_path}", "success")
 
-        # Zwróć plik jako załącznik
+       
         return send_file(
             file_path,
             as_attachment=True,
@@ -223,12 +222,12 @@ def export_results():
         log_message(f"Nieoczekiwany błąd podczas eksportu: {str(e)}", "error")
         return jsonify({'message': f'Nieoczekiwany błąd: {str(e)}'}), 500
 
-# Return the current logs
+
 @app.route('/get_logs', methods=['GET'])
 def get_logs():
     return jsonify({'logs': crawl_logs})
 
-# Return the current results
+
 @app.route('/get_results', methods=['GET'])
 def get_results():
     return jsonify({'results': crawl_results})
